@@ -2,6 +2,7 @@
 #include <iostream>
 
 template<size_t rows, size_t cols, typename Int = int>
+requires( std::is_integral<Int>::value )
 class Matrix
 {
 	/* Constants */
@@ -68,11 +69,11 @@ class Matrix
 	public: template<typename _Int> inline constexpr Matrix operator+(const Matrix& other) const
 	{ Matrix out = *this; out += other; return out; }
 	
-	public: template<typename _Int> inline constexpr Matrix& operator*=(const _Int& rhs)
+	public: template<typename _Int> inline constexpr Matrix& operator*=(const _Int& rhs) requires( std::is_integral<_Int>::value )
 	{ for (size_t i = 0; i < Size; i++) Get(i) *= rhs; return *this; }
 	
-	public: template<typename _Int> inline constexpr Matrix operator*(const _Int& rhs) const
-	{ Matrix out(*this); return out *= rhs; }
+	public: template<typename _Int> inline constexpr Matrix operator*(const _Int& rhs) const requires( std::is_integral<_Int>::value )
+	{ return Matrix(*this) *= rhs; }
 	
 	public: template<size_t _Cols, typename _Int> inline constexpr
 	MulCompatProduct<_Cols> operator*(const MulCompatMtrx<_Cols, _Int>& rhs) const
@@ -113,21 +114,12 @@ class Matrix
 	
 };
 
-template<size_t rows, size_t cols, typename Int, typename _Int>
-Matrix<rows, cols, Int> operator*(_Int lhs, const Matrix<rows, cols, Int>& rhs)
-{ auto out(rhs); return out *= lhs; }
+template<size_t rows, size_t cols, typename Int, typename _Int> inline constexpr
+Matrix<rows, cols, Int> operator*(_Int lhs, const Matrix<rows, cols, Int>& rhs) requires( std::is_integral<_Int>::value )
+{ return Matrix<rows, cols, Int>(rhs) *= lhs; }
 
 int main(int argc, char* argv[])
 {
-	
-	/*
-	{
-		MulCompatProduct<_Cols> out;
-		for (size_t i = 0; i < out.Size; i++)
-			out.Get(i) = ColumnRowProduct(other, out.RowIndex(i), out.ColIndex(i));
-		return out;
-	}
-	*/
 	
 	Matrix<2,3> A = {
 		2, 3, 5,
@@ -142,7 +134,7 @@ int main(int argc, char* argv[])
 	
 	auto m3 = A * C;
 	
-	std::cout << (2 * A).fmt() << std::endl;
+	std::cout << (m3).fmt() << std::endl;
 	
 	return 0;
 }
