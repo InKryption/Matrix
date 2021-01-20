@@ -17,11 +17,10 @@ LFLAG:=\
 
 CFLAG:=\
 -D_DEBUG \
--std=gnu++2a -fconcepts \
+-std=gnu++2a -fconcepts\
 -g -Og \
 -Wall -Werror -Wpedantic \
 -Wno-error=pedantic \
 -Wno-error=unknown-pragmas \
 -Wno-error=unused-variable \
 -Wno-error=unused-but-set-variable \
--ftemplate-depth=32000
