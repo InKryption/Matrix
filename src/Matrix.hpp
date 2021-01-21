@@ -32,69 +32,69 @@ namespace ink {
 		
 		/* Constructors */
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix()
 		{  }
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix(const std::initializer_list<Int>& __l)
 		{ *this = __l.begin(); }
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix(const std::initializer_list< std::initializer_list<Int> >& __ll)
 		{ for (size_t i = 0; i < Size; i++) _DATA_[i] = *((__ll.begin() + RowIndex(i))->begin() + ColIndex(i)); }
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix(const Int arr[Size])
 		{ std::copy(arr, arr + Size, _DATA_); }
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix(const Int arr[rows][cols])
 		{ for (size_t i = 0; i < Size; i++) _DATA_[i] = arr[RowIndex(i)][ColIndex(i)]; }
 		
-		public: inline constexpr
+		public: constexpr
 		Matrix(const Matrix& other)
 		{ std::copy( other._DATA_, other._DATA_ + Size, _DATA_ ); }
 		
-		public: template<typename... args> inline constexpr
+		public: template<typename... args>  constexpr
 		Matrix(args... elems) requires( sizeof...(args) == Size && all_true<std::is_convertible<args&, Int&>{}...>::value )
 		{ Int __dat[] = { elems... }; *this = __dat; }
 		
 		/* Getters */
 		
-		public: inline constexpr Int&
+		public: constexpr Int&
 		Get(size_t Index)
 		{ return _DATA_[Index]; }
 		
-		public: inline constexpr Int
+		public: constexpr Int
 		Get(size_t Index) const
 		{ return _DATA_[Index]; }
 		
-		public: inline constexpr Int&
+		public: constexpr Int&
 		Get(size_t Row, size_t Col)
 		{ return Get(AbsIndex(Row, Col)); }
 		
-		public: inline constexpr Int
+		public: constexpr Int
 		Get(size_t Row, size_t Col) const
 		{ return Get(AbsIndex(Row, Col)); }
 		
 		/* Index transformations */
 		
-		public: static inline constexpr size_t
+		public: static constexpr size_t
 		AbsIndex(Int Row, Int Col)
 		{ return Row * cols + Col; }
 		
-		public: static inline constexpr size_t
+		public: static constexpr size_t
 		ColIndex(size_t Index)
 		{ return Index % cols; }
 		
-		public: static inline constexpr size_t
+		public: static constexpr size_t
 		RowIndex(size_t Index)
 		{ return (Index - ColIndex(Index)) / cols; }
 		
 		/* External Operations */
 		
-		public: template<typename _Int> inline constexpr Matrix&
+		public: template<typename _Int> constexpr Matrix&
 		operator+=(const Matrix& other)
 		{
 			for (size_t i = 0; i < Size; i++)
@@ -102,19 +102,19 @@ namespace ink {
 			return *this;
 		}
 		
-		public: template<typename _Int> inline constexpr Matrix
+		public: template<typename _Int> constexpr Matrix
 		operator+(const Matrix& other) const
 		{ Matrix out = *this; out += other; return out; }
 		
-		public: template<typename _Int> inline constexpr Matrix&
+		public: template<typename _Int> constexpr Matrix&
 		operator*=(const _Int& rhs) requires( std::is_arithmetic<_Int>::value )
 		{ for (size_t i = 0; i < Size; i++) Get(i) *= rhs; return *this; }
 		
-		public: template<typename _Int> inline constexpr Matrix
+		public: template<typename _Int> constexpr Matrix
 		operator*(const _Int& rhs) const requires( std::is_arithmetic<_Int>::value )
 		{ return Matrix(*this) *= rhs; }
 		
-		public: template<size_t _Cols, typename _Int> inline constexpr MulCompatProduct<_Cols>
+		public: template<size_t _Cols, typename _Int> constexpr MulCompatProduct<_Cols>
 		operator*(const MulCompatMtrx<_Cols, _Int>& rhs) const
 		{
 			MulCompatProduct<_Cols> out;
@@ -125,7 +125,7 @@ namespace ink {
 		
 		/* Internal Operations */
 		
-		public: static inline constexpr Matrix
+		public: static constexpr Matrix
 		UnitMatrix() requires ( rows == cols )
 		{ Matrix out; for (size_t i = 0; i < Size; i++) out.Get(i) = out.ColIndex(i) == out.RowIndex(i); return out; }
 		
@@ -142,7 +142,7 @@ namespace ink {
 			;
 		}
 		
-		public: inline constexpr Matrix
+		public: constexpr Matrix
 		Inverse() const requires ( rows == cols && rows == 2 )
 		{
 			Matrix out;
@@ -151,7 +151,7 @@ namespace ink {
 			return out;
 		}
 		
-		public: inline constexpr Matrix
+		public: constexpr Matrix
 		Inverse() const requires ( rows == cols && rows == 3 )
 		{
 			Matrix out;
@@ -174,7 +174,7 @@ namespace ink {
 		}
 		
 		/* Internal functions */
-		private: template<size_t _Cols, typename _Int> inline constexpr Int
+		private: template<size_t _Cols, typename _Int> constexpr Int
 		ColumnRowProduct(const MulCompatMtrx<_Cols, _Int>& other, size_t Row, size_t Col) const
 		{
 			Int out = 0;
@@ -184,7 +184,7 @@ namespace ink {
 		}
 		
 		/* Representation */
-		public: inline constexpr std::string
+		public:  constexpr std::string
 		fmt() const
 		{
 			std::string out = "{ ";
@@ -206,7 +206,7 @@ namespace ink {
 	
 }
 
-template<size_t rows, size_t cols, typename Int, typename _Int> inline constexpr
+template<size_t rows, size_t cols, typename Int, typename _Int>  constexpr
 ink::Matrix<rows, cols, Int> operator*(_Int lhs, const ink::Matrix<rows, cols, Int>& rhs) requires( std::is_arithmetic<_Int>::value )
 { return ink::Matrix<rows, cols, Int>(rhs) *= lhs; }
 
