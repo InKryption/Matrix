@@ -145,7 +145,9 @@ namespace ink {
 		public: inline constexpr Matrix
 		Inverse() const requires ( rows == cols && rows == 2 )
 		{
-			Matrix out = Determinant() * (*this);
+			Matrix out;
+			if ( Determinant() == 0 ) return out;
+			out = Determinant() * (*this);
 			return out;
 		}
 		
@@ -153,6 +155,8 @@ namespace ink {
 		Inverse() const requires ( rows == cols && rows == 3 )
 		{
 			Matrix out;
+			
+			if (Determinant() == 0) return out;
 			
 			out.Get(0) = Get(1, 1) * Get(2, 2) - Get(1, 2) * Get(2, 1);
 			out.Get(1) = Get(0, 2) * Get(2, 1) - Get(0, 1) * Get(2, 2);
