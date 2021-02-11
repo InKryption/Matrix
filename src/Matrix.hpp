@@ -2,8 +2,9 @@
 #define __INK__MATRIX__HEADER_FILE__
 
 #include <stdlib.h>
-#include <type_traits>
-#include <initializer_list>
+#include <math.h>
+#include <concepts>
+#include <span>
 
 #ifdef _DEBUG
 #include <string>
@@ -15,9 +16,11 @@ namespace ink {
 	template<bool...> struct bool_pack;
 	template<bool... v> using all_true = std::is_same< bool_pack<true, v...>, bool_pack<v..., true> >;
 	
+	class BasicMatrix {};
+	
 	template<size_t rows, size_t cols = rows, typename Int = int>
 	requires( rows * cols > 0 && std::is_arithmetic<Int>::value )
-	class Matrix
+	class StaticMatrix: BasicMatrix
 	{
 		/* Constants */
 		public: enum : size_t
@@ -25,50 +28,50 @@ namespace ink {
 		
 		/* Contiguous Matrixes */
 		public: template<size_t _Cols, typename _Int>
-		using MulCompatMtrx = Matrix<cols, _Cols, _Int>;
+		using MulCompatMtrx = StaticMatrix<cols, _Cols, _Int>;
 		
 		public: template<size_t _Cols>
-		using MulCompatProduct = Matrix<rows, _Cols, Int>;
+		using MulCompatProduct = StaticMatrix<rows, _Cols, Int>;
 		
 		/* Constructors */
 		
 		public: constexpr
-		Matrix()
+		StaticMatrix()
 		{  }
 		
 		public: constexpr
-		Matrix(const std::initializer_list<Int>& __l)
+		StaticMatrix(const std::initializer_list<Int>& __l)
 		{ *this = __l.begin(); }
 		
 		public: constexpr
-		Matrix(const std::initializer_list< std::initializer_list<Int> >& __ll)
-		{ for (size_t i = 0; i < Size; i++) _DATA_[i] = *((__ll.begin() + RowIndex(i))->begin() + ColIndex(i)); }
+		StaticMatrix(const std::initializer_list< std::initializer_list<Int> >& __ll)
+		{ for (size_t i = 0; i < Size; i++) M_data[i] = *((__ll.begin() + RowIndex(i))->begin() + ColIndex(i)); }
 		
 		public: constexpr
-		Matrix(const Int arr[Size])
-		{ std::copy(arr, arr + Size, _DATA_); }
+		StaticMatrix(const Int arr[Size])
+		{ std::copy(arr, arr + Size, M_data); }
 		
 		public: constexpr
-		Matrix(const Int arr[rows][cols])
-		{ for (size_t i = 0; i < Size; i++) _DATA_[i] = arr[RowIndex(i)][ColIndex(i)]; }
+		StaticMatrix(const Int arr[rows][cols])
+		{ for (size_t i = 0; i < Size; i++) M_data[i] = arr[RowIndex(i)][ColIndex(i)]; }
 		
 		public: constexpr
-		Matrix(const Matrix& other)
-		{ std::copy( other._DATA_, other._DATA_ + Size, _DATA_ ); }
+		StaticMatrix(const StaticMatrix& other)
+		{ std::copy( other.M_data, other.M_data + Size, M_data ); }
 		
 		public: template<typename... args>  constexpr
-		Matrix(args... elems) requires( sizeof...(args) == Size && all_true<std::is_convertible<args&, Int&>{}...>::value )
-		{ Int __dat[] = { elems... }; *this = __dat; }
+		StaticMatrix(args... elems) requires( sizeof...(args) == Size && all_true<std::is_convertible<args&, Int&>{}...>::value )
+		{ *this = std::move({ elems... }); }
 		
 		/* Getters */
 		
 		public: constexpr Int&
 		Get(size_t Index)
-		{ return _DATA_[Index]; }
+		{ return M_data[Index]; }
 		
 		public: constexpr Int
 		Get(size_t Index) const
-		{ return _DATA_[Index]; }
+		{ return M_data[Index]; }
 		
 		public: constexpr Int&
 		Get(size_t Row, size_t Col)
@@ -94,25 +97,25 @@ namespace ink {
 		
 		/* External Operations */
 		
-		public: template<typename _Int> constexpr Matrix&
-		operator+=(const Matrix& other)
+		public: template<typename _Int> constexpr StaticMatrix&
+		operator+=(const StaticMatrix& other)
 		{
 			for (size_t i = 0; i < Size; i++)
 			Get(i) += other.Get(i);
 			return *this;
 		}
 		
-		public: template<typename _Int> constexpr Matrix
-		operator+(const Matrix& other) const
-		{ Matrix out = *this; out += other; return out; }
+		public: template<typename _Int> constexpr StaticMatrix
+		operator+(const StaticMatrix& other) const
+		{ StaticMatrix out = *this; out += other; return out; }
 		
-		public: template<typename _Int> constexpr Matrix&
+		public: template<typename _Int> constexpr StaticMatrix&
 		operator*=(const _Int& rhs) requires( std::is_arithmetic<_Int>::value )
 		{ for (size_t i = 0; i < Size; i++) Get(i) *= rhs; return *this; }
 		
-		public: template<typename _Int> constexpr Matrix
+		public: template<typename _Int> constexpr StaticMatrix
 		operator*(const _Int& rhs) const requires( std::is_arithmetic<_Int>::value )
-		{ return Matrix(*this) *= rhs; }
+		{ return StaticMatrix(*this) *= rhs; }
 		
 		public: template<size_t _Cols, typename _Int> constexpr MulCompatProduct<_Cols>
 		operator*(const MulCompatMtrx<_Cols, _Int>& rhs) const
@@ -125,9 +128,9 @@ namespace ink {
 		
 		/* Internal Operations */
 		
-		public: static constexpr Matrix
+		public: static constexpr StaticMatrix
 		UnitMatrix() requires ( rows == cols )
-		{ Matrix out; for (size_t i = 0; i < Size; i++) out.Get(i) = out.ColIndex(i) == out.RowIndex(i); return out; }
+		{ StaticMatrix out; for (size_t i = 0; i < Size; i++) out.Get(i) = out.ColIndex(i) == out.RowIndex(i); return out; }
 		
 		public: constexpr Int
 		Determinant() const requires ( rows == cols && rows == 2 )
@@ -142,19 +145,19 @@ namespace ink {
 			;
 		}
 		
-		public: constexpr Matrix
+		public: constexpr StaticMatrix
 		Inverse() const requires ( rows == cols && rows == 2 )
 		{
-			Matrix out;
+			StaticMatrix out;
 			if ( Determinant() == 0 ) return out;
 			out = Determinant() * (*this);
 			return out;
 		}
 		
-		public: constexpr Matrix
+		public: constexpr StaticMatrix
 		Inverse() const requires ( rows == cols && rows == 3 )
 		{
-			Matrix out;
+			StaticMatrix out;
 			
 			if (Determinant() == 0) return out;
 			
@@ -193,21 +196,65 @@ namespace ink {
 			for (size_t i = 0; i < Size; i++)
 			{
 				is_end = (i + 1) % cols == 0;
-				buff = std::to_string(_DATA_[i]);
-				out = out + ' ' + ( (_DATA_[i] < 10 && _DATA_[i] >= 0) ? '0' + buff : buff) + ' ' + ( is_end ? " }\n" : "") + ( is_end && i + 1 != Size ? "{ " : "");
+				buff = std::to_string(M_data[i]);
+				out = out + ' ' + ( (M_data[i] < 10 && M_data[i] >= 0) ? '0' + buff : buff) + ' ' + ( is_end ? " }\n" : "") + ( is_end && i + 1 != Size ? "{ " : "");
 			}
 			return out;
 		} 
 		
 		/* Internal data */
-		private: Int _DATA_[Size] = { 0 };
+		private: Int M_data[Size] = { 0 };
 		
+	};
+	
+	typedef int T;
+	class Matrix
+	{
+		public: static constexpr size_t
+		AbsIndex(size_t max_cols, size_t row, size_t col)
+		{ return row * max_cols + col; }
+		
+		public: static constexpr size_t
+		ColIndex(size_t max_cols, size_t index)
+		{ return index % max_cols; }
+		
+		public: static constexpr size_t
+		RowIndex(size_t max_cols, size_t index)
+		{ return (index - ColIndex(max_cols, index)) / max_cols; }
+		
+		// Default Constructs Unit Matrix of 3x3.
+		public: constexpr
+		Matrix(): rows(3), cols(3), M_data(new T[9])
+		{
+			T res[9] = {
+				(T)1, (T)0, (T)0,
+				(T)0, (T)1, (T)0,
+				(T)0, (T)0, (T)1,
+			};
+			std::move(res, res + 9, M_data);
+		}
+		
+		// Constructs Unit Matrix of n x n dimensions.
+		public: constexpr
+		Matrix(size_t n): rows(n), cols(n), M_data(new T[n*n])
+		{ for(size_t i = 0; i < n; i++) *(M_data + AbsIndex(cols, i, i) ) = 1; }
+		
+		// Constructs Matrix of rows x cols dimensions, with elements all = 0.
+		public: constexpr
+		Matrix(size_t rows, size_t cols):
+		rows(rows), cols(cols), M_data(new T[rows * cols]) {}
+		
+		public: constexpr
+		~Matrix() { delete M_data; }
+		
+		private: size_t rows, cols;
+		private: T* M_data;
 	};
 	
 }
 
 template<size_t rows, size_t cols, typename Int, typename _Int>  constexpr
-ink::Matrix<rows, cols, Int> operator*(_Int lhs, const ink::Matrix<rows, cols, Int>& rhs) requires( std::is_arithmetic<_Int>::value )
-{ return ink::Matrix<rows, cols, Int>(rhs) *= lhs; }
+ink::StaticMatrix<rows, cols, Int> operator*(_Int lhs, const ink::StaticMatrix<rows, cols, Int>& rhs) requires( std::is_arithmetic<_Int>::value )
+{ return ink::StaticMatrix<rows, cols, Int>(rhs) *= lhs; }
 
 #endif
